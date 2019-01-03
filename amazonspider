@@ -1,0 +1,91 @@
+currentd=getwd();
+setwd("D:/Spider/Amazon/AM/DATA");
+t=Sys.time();
+t=gsub("-|:| ","_",t);
+fileName=paste("amazonAM_BestSellerTop100",t,sep="_");
+fileName=paste(fileName,"csv",sep=".");
+
+hd=cbind("Image","","Rank","Title","Rating","Reviews","Price","Link");
+write.table(hd,fileName, append = TRUE,sep = ",", row.names = FALSE,col.names = FALSE,quote=FALSE);
+url=read.table("D:/Spider/Amazon/AM/URL/AMAZONurlAM_LOCAL.csv", header = FALSE, sep = ",",stringsAsFactors=FALSE);
+names(url)=NULL;
+addr=function(x)
+{
+  length=nrow(x);
+  tmp="";
+  for (i in 1:length)
+  {
+   tmp[i]=x[i,1];
+   }
+   tmp;
+}
+url=addr(url);
+
+N.A.="N.A.";
+
+
+library("rvest")
+library("xml2")
+
+fetch=function(x)
+{
+Page=read_html(x);
+
+ProductName=Page%>%html_nodes(".zg_itemImmersion");
+
+Image=ProductName%>%html_node("img");
+Image=Image%>%html_attr("src");
+Image=paste("<table><tr><td><img src=",Image," height=160></img></td></tr>",sep="");
+Image[length(Image)==0]="N.A.";
+Image[nchar(Image)==0]="N.A.";
+
+Title=ProductName%>%html_node(".p13n-sc-truncate.p13n-sc-line-clamp-2")%>%html_text();
+Title=gsub(",|\n"," ",Title);
+Title=gsub("^\\s+|\\s+$","",Title);
+Title[length(Title)==0]="N.A.";
+Title[nchar(Title)==0]="N.A.";
+
+
+Link=ProductName%>%html_node("a.a-link-normal")%>%html_attr("href");
+Link=gsub(".*/dp","https://www.amazon.com/dp",Link);
+Link=gsub("/ref=.*","",Link);
+Link[length(Link)==0]="N.A.";
+Link[nchar(Link)==0]="N.A.";
+
+Rating=ProductName%>%html_node(".a-icon-alt")%>%html_text();
+Rating=gsub(" .*","",Rating);
+Rating[length(Rating)==0]="N.A.";
+Rating[nchar(Rating)==0]="N.A.";
+
+Reviews=ProductName%>%html_node(".a-size-small.a-link-normal")%>%html_text();
+Reviews=gsub(",","",Reviews);
+Reviews[length(Reviews)==0]="N.A.";
+Reviews[nchar(Reviews)==0]="N.A.";
+
+Rank=ProductName%>%html_node(".zg_rankNumber")%>%html_text();
+Rank=gsub("\n|[.]","",Rank);
+Rank[length(Rank)==0]="N.A.";
+Rank[nchar(Rank)==0]="N.A.";
+
+Price=ProductName%>%html_node(".p13n-sc-price")%>%html_text();
+Price=gsub("[^0-9.]","",Price);
+Price[length(Price)==0]="N.A.";
+Price[nchar(Price)==0]="N.A.";
+
+
+Total=cbind(Image,Rank,Title,Rating,Reviews,Price,Link);
+write.table(Total,fileName, append = TRUE,sep = ",", row.names = FALSE,col.names = FALSE,quote=FALSE,na = "N.A.");
+
+
+}
+
+lapply(url,fetch);
+
+shell.exec(fileName);
+
+setwd(currentd);
+rm(currentd);
+rm(fileName);
+
+
+
